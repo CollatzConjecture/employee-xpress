@@ -2,66 +2,80 @@ package com.employee.express.crudEmployee.controller;
 
 import com.employee.express.crudEmployee.entity.Employee;
 import com.employee.express.crudEmployee.service.EmployeeService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/employees")
 public class EmployeeRestController {
 
     private EmployeeService employeeService;
 
-    public EmployeeRestController(EmployeeService theEmployeeService) {
+    @Autowired
+    private EmployeeRestController(EmployeeService theEmployeeService) {
         employeeService = theEmployeeService;
     }
 
+    @GetMapping("/")
+    public RedirectView redirectToEmployeeList() {
+        return new RedirectView("/employees/list");
+    }
+
+    @GetMapping("")
+    public RedirectView redirectToEmployeeList2() {
+        return new RedirectView("/employees/list");
+    }
+
     @GetMapping("/list")
-    public List<Employee> findAll() {
-        return employeeService.findAll();
+    public String listEmployees(Model theModel) {
+
+        List<Employee> theEmployees = employeeService.findAll();
+
+        theModel.addAttribute("employees", theEmployees);
+
+        return "/employees/list-employees";
     }
 
-    @GetMapping("/employees/{employeeId}")
-    public Employee getEmployee(@PathVariable int employeeId) {
-        Employee theEmployee = employeeService.findById(employeeId);
+    @GetMapping("/showFormForAdd")
+    public String showFormForAdd(Model theModel) {
 
-        if(theEmployee == null) {
-            throw new RuntimeException("Employee id not found - " + employeeId);
-        }
+        // create model attribute to bind form data
+        Employee theEmployee = new Employee();
 
-        return theEmployee;
+        theModel.addAttribute("employee", theEmployee);
+
+        return "employees/employee-form";
     }
 
-    @PostMapping("/add")
-    public Employee addEmployee(@RequestParam Employee theEmployee) {
+    @GetMapping("/showFormForUpdate")
+    public String showFormForUpdate(@RequestParam("employeeId") int theId,
+                                    Model theModel) {
 
-        theEmployee.setId(0);
+        Employee theEmployee = employeeService.findById(theId);
 
-        Employee dbEmployee = employeeService.save(theEmployee);
+        theModel.addAttribute("employee", theEmployee);
 
-        return dbEmployee;
+        return "employees/employee-form";
     }
 
-    @PutMapping("update")
-    public Employee updateEmployee(@RequestParam Employee theEmployee) {
+    @PostMapping("/save")
+    public String saveEmployee(@ModelAttribute("employee") Employee theEmployee) {
 
-        Employee dbEmployee = employeeService.save(theEmployee);
+        employeeService.save(theEmployee);
 
-        return dbEmployee;
+        return "redirect:/employees/list";
     }
 
-    @DeleteMapping("/delete/{employeeId}")
-    public String deleteEmployee(@PathVariable int employeeId) {
+    @GetMapping("/delete")
+    public String delete(@RequestParam("employeeId") int theId) {
 
-        Employee temptEmployee = employeeService.findById(employeeId);
+        employeeService.deleteById(theId);
 
-        if(temptEmployee == null) {
-            throw new RuntimeException("Employee id not found - " + temptEmployee);
-        }
-
-        employeeService.deleteById(employeeId);
-
-        return "Deleted employee id - " + employeeId;
+        return "redirect:/employees/list";
     }
-
 }
